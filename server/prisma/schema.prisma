@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  inactive
+  paused
+}
+
+model User {
+  user_id      Int       @id @default(autoincrement())
+  username     String    @unique
+  email        String    @unique
+  password     String    @map("password_hash")
+  user_status  UserStatus
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  projects     Project[]
+  learningPaths LearningPath[]
+  userProgress UserProgress[]
+  agentActions AgentAction[]
+}
+
+model ProjectStatus {
+  status_code String   @id
+  description String
+
+  projects    Project[]
+}
+
+model Project {
+  project_id    Int       @id @default(autoincrement())
+  user_id       Int
+  status_code   String
+  project_name  String
+  total_files   Int?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  uploaded_at   DateTime
+
+  user          User      @relation(fields: [user_id], references: [user_id])
+  status        ProjectStatus @relation(fields: [status_code], references: [status_code])
+
+  codeFiles     CodeFile[]
+  analyses      Analysis[]
+  learningPaths LearningPath[]
+  projectStatistics ProjectStatistic[]
+  agentActions  AgentAction[]
+}
+
+model CodeFile {
+  file_id        Int       @id @default(autoincrement())
+  project_id     Int
+  file_name      String    @unique
+  programming_lang String
+  content        String?
+  file_size      Decimal?
+  file_path      String?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  project        Project   @relation(fields: [project_id], references: [project_id])
+  analyses       Analysis[]
+}
+
+model Analysis {
+  analysis_id              Int      @id @default(autoincrement())
+  project_id               Int
+  file_id                  Int
+  analysis_type            String
+  analysis_result          String?
+  issues_found             String?
+  issues_count             Int?
+  suggestions              String?
+  quality_score            Int?
+  security_score           Int?
+  complexity_score         Int?
+  best_practices_score     Int?
+  learning_gaps            String?
+  strengths                String?
+  learning_recommendations String?
+  skill_level_assessments  String?
+  improvement_priority     String?
+  recommended_resources    String?
+  analysis_model           String?
+  processing_time_ms       Decimal?
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+
+  project                  Project   @relation(fields: [project_id], references: [project_id])
+  codeFile                 CodeFile  @relation(fields: [file_id], references: [file_id])
+}
+
+model LearningPath {
+  path_id              Int      @id @default(autoincrement())
+  user_id              Int
+  project_id           Int
+  recommended_topics   String?
+  difficulty_level     Int?
+  estimated_hours      Int?
+  progress_percentage  Int?
+  learning_status      String?
+  learning_objectives  String?
+  prerequisites        String?
+  resources            String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  user                 User     @relation(fields: [user_id], references: [user_id])
+  project              Project  @relation(fields: [project_id], references: [project_id])
+  userProgress         UserProgress[]
+  agentActions         AgentAction[]
+}
+
+enum SkillLevel {
+  beginner
+  intermediate
+  advanced
+  expert
+}
+
+model UserProgress {
+  progress_id         Int         @id @default(autoincrement())
+  user_id             Int
+  path_id             Int
+  topic_completed     String?
+  completion_date     DateTime
+  skill_level         SkillLevel?
+  streak_days         Int?
+  time_spent_minutes  Decimal?
+  achievement_earned  String?
+  notes               String?
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+
+  user                User        @relation(fields: [user_id], references: [user_id])
+  learningPath        LearningPath @relation(fields: [path_id], references: [path_id])
+}
+
+
+model ProjectStatistic {
+  stats_id                Int      @id @default(autoincrement())
+  project_id              Int
+  total_lines_of_code     Int?
+  total_functions         Int?
+  total_classes           Int?
+  total_tests             Int?
+  cyclomatic_complexity   Int?
+  language_distribution   String?
+  average_quality_score   Int?
+  average_complexity_score Int?
+  average_security_score  Int?
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  project                 Project   @relation(fields: [project_id], references: [project_id])
+}
+
+model AgentActionType {
+  action_type   String   @id
+  description   String
+
+  actions       AgentAction[]
+}
+
+enum ActionOutcome {
+  success
+  failed
+  ignored
+  pending
+}
+
+enum TriggeredBy {
+  system
+  user
+  schedule
+  api
+}
+
+model AgentAction {
+  action_id         Int             @id @default(autoincrement())
+  user_id           Int
+  project_id        Int
+  path_id           Int
+  action_type       String
+  agent_name        String?
+  action_details    String?
+  outcome           ActionOutcome?
+  confidence_score  Decimal?
+  triggered_by      TriggeredBy?
+  created_at        DateTime        @default(now())
+
+  user              User            @relation(fields: [user_id], references: [user_id])
+  project           Project         @relation(fields: [project_id], references: [project_id])
+  learningPath      LearningPath    @relation(fields: [path_id], references: [path_id])
+  actionType        AgentActionType @relation(fields: [action_type], references: [action_type])
+}
+
