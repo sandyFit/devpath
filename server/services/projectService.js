@@ -1,11 +1,10 @@
-import { prismaClient } from '../prisma/prismaClient.js';
+import prisma from '../prisma/prismaClient.js';
 import log from 'npmlog';
 
-log.level = "silly"
 
 class ProjectService {
     constructor() {
-        this.prismaClient = prismaClient;
+        this.prismaClient = prisma;
         this.logger = log;
     }
 
@@ -99,10 +98,18 @@ class ProjectService {
             }
 
             this.logger.silly(`[PROJECT SERVICE] Retrieving project summary: ${projectId}`);
-            const summary = await this.prismaClient.projectStatistics.findMany({
-                where: {
-                    project_id: projectId
-                }
+            const summary = await this.prismaClient.projectStatistics.findFirst({
+                where: { project_id: Number(projectId) },
+                orderBy: { created_at: "desc" }, // newest first
+                select: {
+                    average_quality_score: true,
+                    average_complexity_score: true,
+                    average_security_score: true,
+                    language_distribution: true,
+                    total_lines_of_code: true,
+                    total_functions: true,
+                    total_classes: true,
+                },
             });
 
             if (summary.length === 0) {
@@ -129,9 +136,14 @@ class ProjectService {
 
             this.logger.silly(`[PROJECT SERVICE] Retrieving project summary: ${projectId}`);
 
-            const stats = await this.prismaClient.projectStatistics.findMany({
-                where: {
-                    project_id: projectId
+            const stats = await this.prismaClient.project_statistics.findMany({
+                where: { project_id: Number(projectId) },
+                orderBy: { created_at: 'asc' }, // oldest first
+                select: {
+                    created_at: true,
+                    average_quality_score: true,
+                    average_complexity_score: true,
+                    average_security_score: true,
                 }
             });
 

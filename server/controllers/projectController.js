@@ -1,4 +1,4 @@
-import ProjectService from "../services/projectService";
+import ProjectService from "../services/projectService.js";
 import log from 'npmlog';
 import { handleError } from "../utils/handleError.js";
 
@@ -30,29 +30,39 @@ class ProjectController {
     }
 
     async getProjectById(req, res) {
-        try {
-            this.logger.silly("[PROJECT CONTROLLER] — Received request to fetch project");
+        this.logger.silly("[DEBUG] Entered getProjectById");
 
-            const { projectId } = req.params;
-            if (!projectId) {
-                this.logger.warn("[PROJECT CONTROLLER] — Missing projectId in request");
-                return res.status(400).json({ message: "Missing required fields: projectId is required" });
+        try {
+            const projectId = parseInt(req.params.projectId, 10);
+            if (isNaN(projectId)) {
+                this.logger.warn("[PROJECT CONTROLLER] — Invalid projectId format");
+                return res.status(400).json({ message: "projectId must be a number" });
             }
 
+            this.logger.silly("[DEBUG] projectId from params:", projectId);
+
             const project = await this.service.getProjectById(projectId);
+
             this.logger.info("[PROJECT CONTROLLER] — Project fetched successfully");
             return res.status(200).json(project);
-
+            
         } catch (error) {
+            this.logger.error("[ERROR] getProjectById failed:", error);
             return handleError(res, "getting project by ID", error);
         }
     }
+
 
     async getProjectSummary(req, res) {
         try {
             this.logger.silly("[PROJECT CONTROLLER] — Received request to get project summary");
 
-            const { projectId } = req.params;
+            const projectId = parseInt(req.params.projectId, 10);
+            if (isNaN(projectId)) {
+                this.logger.warn("[PROJECT CONTROLLER] — Invalid projectId format");
+                return res.status(400).json({ message: "projectId must be a number" });
+            }
+
             if (!projectId) {
                 this.logger.warn("[PROJECT CONTROLLER] — Missing projectId in request");
                 return res.status(400).json({ message: "Missing required fields: projectId is required" });
@@ -71,7 +81,12 @@ class ProjectController {
         try {
             this.logger.silly("[PROJECT CONTROLLER] — Received request to get project statistics");
 
-            const { projectId } = req.params;
+            const projectId = parseInt(req.params.projectId, 10);
+            if (isNaN(projectId)) {
+                this.logger.warn("[PROJECT CONTROLLER] — Invalid projectId format");
+                return res.status(400).json({ message: "projectId must be a number" });
+            }
+
             if (!projectId) {
                 this.logger.warn("[PROJECT CONTROLLER] — Missing projectId in request");
                 return res.status(400).json({ message: "Missing required fields: projectId is required" });
