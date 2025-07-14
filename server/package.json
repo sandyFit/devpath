@@ -19,7 +19,8 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "npmlog": "^7.0.1"
   },
   "devDependencies": {
     "prisma": "^6.11.1"
