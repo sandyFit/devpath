@@ -35,7 +35,7 @@ model analyses {
   analysis_id              Int        @id(map: "Analysis_pkey") @default(autoincrement())
   project_id               Int
   file_id                  Int
-  analysis_type            String
+  analysis_type            AnalysisType
   analysis_result          String?
   issues_found             String?
   issues_count             Int?
@@ -186,6 +186,15 @@ enum SkillLevel {
   expert
 }
 
+enum AnalysisType {
+  CODE_QUALITY
+  SECURITY
+  COMPLEXITY
+  BEST_PRACTICES
+  PERFORMANCE
+}
+
+
 enum ActionOutcome {
   success
   failed
@@ -199,3 +208,4 @@ enum TriggeredBy {
   schedule
   api
 }
+

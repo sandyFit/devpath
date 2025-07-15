@@ -25,7 +25,7 @@ class ProjectController {
             return res.status(201).json(project);
 
         } catch (error) {
-            return handleError(res, "creating project", error);
+            return handleError(res, "creating project", error, "PROJECT CONTROLLER");
         }
     }
 
@@ -48,7 +48,7 @@ class ProjectController {
             
         } catch (error) {
             this.logger.error("[ERROR] getProjectById failed:", error);
-            return handleError(res, "getting project by ID", error);
+            return handleError(res, "getting project by ID", error, "PROJECT CONTROLLER");
         }
     }
 
@@ -73,7 +73,8 @@ class ProjectController {
             return res.status(200).json(summary);
 
         } catch (error) {
-            return handleError(res, "getting project summary", error);
+            this.logger.error("[ERROR] getProjectSummary failed:", error);
+            handleError(res, "getting project summary", error, "PROJECT CONTROLLER");
         }
     }
 
@@ -97,7 +98,8 @@ class ProjectController {
             return res.status(200).json(stats);
 
         } catch (error) {
-            return handleError(res, "getting project statistics", error);
+            this.logger.error("[ERROR] getProjectStats failed:", error);
+            return handleError(res, "getting project statistics", error, "PROJECT CONTROLLER");
         }
     }
 }

@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import prisma from './prisma/prismaClient.js';
 import ProjectRoutes from "./routes/projectRoutes.js";
+import AnalysisRoutes from "./routes/analysisRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -10,7 +11,9 @@ dotenv.config();
 app.use(cors());
 
 const projectRoutes = new ProjectRoutes();
+const analysisRoutes = new AnalysisRoutes();
 app.use("/api/v1/projects", projectRoutes.getRouter());
+app.use("/api/v1/analyses", analysisRoutes.getRouter());
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 5000; 

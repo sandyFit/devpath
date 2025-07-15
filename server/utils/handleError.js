@@ -1,8 +1,8 @@
 import log from 'npmlog';
 import { Prisma } from '@prisma/client';
 
-export const handleError = (res, context, error) => {
-    log.error(`[PROJECT CONTROLLER] ${context} failed: ${error.message}`);
+export const handleError = (res, context, error, logTag = "CONTROLLER") => {
+    log.error(`[${logTag}] ${context} failed: ${error.message}`);
 
     if (error.message.includes("Missing required fields")) {
         return res.status(400).json({ message: error.message });
@@ -25,4 +25,4 @@ export const handleError = (res, context, error) => {
     return res.status(500).json({
         message: `An unexpected error occurred while ${context}`,
     });
-}
+};

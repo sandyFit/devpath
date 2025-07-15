@@ -1,3 +1,8 @@
+/*
+to run the code, you can use the following command in your terminal:
+npx prisma db seed
+*/
+
 -- USERS
 INSERT INTO users (username, email, password_hash, user_status, created_at, updated_at)
 VALUES ('devpath_user', 'user@example.com', 'hashed_password_123', 'active', NOW(), NOW());
@@ -45,7 +50,7 @@ INSERT INTO analyses (
   recommended_resources, analysis_model, processing_time_ms, created_at, updated_at
 )
 VALUES (
-  1, 1, 'llm_static_analysis',
+  1, 1, 'CODE_QUALITY',
   '✔ Code Analysis Complete\n✔ No critical issues detected\n\n🧠 Tips:\n- Consider using "const" over "var"\n- Add comments for clarity\n',
   'No major issues.\nConsider renaming variables for readability.',
   2,
@@ -57,7 +62,7 @@ VALUES (
   'intermediate',
   'medium',
   'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions',
-  'gpt-4-code-analyzer',
+  'llama3-70b-8192',
   1340,
   NOW(),
   NOW()
