@@ -128,6 +128,11 @@ const api = {
     getAnalysisByProjectId: async (projectId) => { 
         const response = await apiClient.get(`/analyses/${projectId}`);
         return response.data;
+    },
+
+    getProjectSummary: async (projectId) => {
+        const response = await apiClient.get(`/projects/${projectId}/summary`);
+        return response.data;
     }
 
 }

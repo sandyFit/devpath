@@ -100,7 +100,7 @@ model project_statistics {
   total_classes            Int?
   total_tests              Int?
   cyclomatic_complexity    Int?
-  language_distribution    String?
+  language_distribution    Json?
   average_quality_score    Int?
   average_complexity_score Int?
   average_security_score   Int?

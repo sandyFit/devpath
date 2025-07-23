@@ -1,7 +1,6 @@
 import prisma from '../prisma/prismaClient.js';
 import log from 'npmlog';
 
-
 class ProjectService {
     constructor() {
         this.prismaClient = prisma;
@@ -66,7 +65,7 @@ class ProjectService {
             this.logger.silly(`[PROJECT SERVICE] Retrieving project: ${projectId}`);
 
             const project = await this.prismaClient.projects.findUnique({
-                where: { project_id: projectId },
+                where: { project_id: Number(projectId) },
                 include: {
                     users: true,
                     code_files: true,
@@ -90,7 +89,7 @@ class ProjectService {
      * @param {number} projectId - Project ID to retrieve statistics for
      * @returns {Promise<Object[]|null>} Array of statistics or null if none found
      */
-    async getProjectSummary(projectId) { 
+    async getProjectSummary(projectId) {
         try {
             const exists = await this.projectExists(projectId);
             if (!exists) {
@@ -98,27 +97,44 @@ class ProjectService {
             }
 
             this.logger.silly(`[PROJECT SERVICE] Retrieving project summary: ${projectId}`);
-            const summary = await this.prismaClient.projectStatistics.findFirst({
+
+            // Workaround for Postgres "cached plan must not change result type" error in Neon Serverless
+            // Step 1: Get all *safe* scalar fields first
+            const baseSummary = await this.prismaClient.project_statistics.findFirst({
                 where: { project_id: Number(projectId) },
-                orderBy: { created_at: "desc" }, // newest first
+                orderBy: { created_at: "desc" },
                 select: {
                     average_quality_score: true,
                     average_complexity_score: true,
                     average_security_score: true,
-                    language_distribution: true,
                     total_lines_of_code: true,
                     total_functions: true,
                     total_classes: true,
                 },
             });
 
-            if (summary.length === 0) {
+            if (!baseSummary) {
                 this.logger.warn(`[PROJECT SERVICE] Project summary not found: ${projectId}`);
                 return null;
             }
 
+            // Step 2: Fetch the JSON field separately
+            // Splitting query ensures separate execution plans for Json fields
+            const jsonField = await this.prismaClient.project_statistics.findFirst({
+                where: { project_id: Number(projectId) },
+                orderBy: { created_at: "desc" },
+                select: {
+                    language_distribution: true,
+                },
+            });
+
+            // Step 3: Merge results
+            const summary = {
+                ...baseSummary,
+                language_distribution: jsonField?.language_distribution || {},
+            };
+
             this.logger.info(`[PROJECT SERVICE] Project summary retrieved successfully: ${projectId}`);
-            
             return summary;
 
         } catch (error) {
@@ -126,7 +142,8 @@ class ProjectService {
             throw error;
         }
     }
-      
+
+
     async getProjectStats(projectId) {
         try {
             const exists = await this.projectExists(projectId);
@@ -134,7 +151,7 @@ class ProjectService {
                 throw new Error(`Project with ID ${projectId} does not exist`);
             }
 
-            this.logger.silly(`[PROJECT SERVICE] Retrieving project summary: ${projectId}`);
+            this.logger.silly(`[PROJECT SERVICE] Retrieving project stats: ${projectId}`);
 
             const stats = await this.prismaClient.project_statistics.findMany({
                 where: { project_id: Number(projectId) },
@@ -161,18 +178,18 @@ class ProjectService {
 
             const result = await this.prismaClient.projects.findUnique({
                 where: {
-                    project_id: projectId
+                    project_id: Number(projectId)  // Ensure it's a number
                 }
             });
 
-            return !!result; 
+            return !!result;
 
         } catch (error) {
             this.logger.error(`[PROJECT SERVICE] Error checking project existence: ${error.message}`);
             throw error;
         }
     }
-      
+
 }
 
 export default ProjectService;
