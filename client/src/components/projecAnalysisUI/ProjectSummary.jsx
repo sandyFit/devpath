@@ -6,23 +6,25 @@ const ProjectSummary = ({projectId}) => {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const fetchSummary = useCallback(async () => { 
+    const fetchSummary = useCallback(async () => {
         if (!projectId) return;
-        
+
         setLoading(true);
         try {
             const response = await api.getProjectSummary(projectId);
-            console.log('[Full API response]', response); 
+            console.log('[Full API response]', response);
 
-            const data = response.data;
+            const data = response;
             console.log('[Fetched]', data);
-            setSummary(data ? [data] : []);
-            setError(null);
 
-            console.error('[Fetch Error]', error);
+            setSummary(data ? [data] : []);
+            setError(null); // ✅ Clear any previous error
+
+        } catch (err) {
+            console.error('[Fetch Error]', err);
             setError('Failed to fetch summary');
         } finally {
-            setLoading(false); // ✅ No need to pass a string here
+            setLoading(false);
         }
     }, [projectId]);
 
