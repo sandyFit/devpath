@@ -93,21 +93,27 @@ model learning_paths {
 }
 
 model project_statistics {
-  stats_id                 Int      @id(map: "ProjectStatistic_pkey") @default(autoincrement())
-  project_id               Int
-  total_lines_of_code      Int?
-  total_functions          Int?
-  total_classes            Int?
-  total_tests              Int?
-  cyclomatic_complexity    Int?
-  language_distribution    Json?
-  average_quality_score    Int?
-  average_complexity_score Int?
-  average_security_score   Int?
-  created_at               DateTime @default(now())
-  updated_at               DateTime
-  projects                 projects @relation(fields: [project_id], references: [project_id], map: "ProjectStatistic_project_id_fkey")
+  stats_id                Int      @id @default(autoincrement())
+  project_id              Int
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  average_quality_score   Float?
+  average_complexity_score Float?
+  average_security_score   Float?
+  language_distribution   Json?
+
+  total_files             Int?     
+  total_tests             Int?     
+  total_issues            Int?     
+
+  total_lines_of_code     Int?
+  total_functions         Int?
+  total_classes           Int?
+
+  projects                projects @relation(fields: [project_id], references: [project_id])
 }
+
 
 model project_statuses {
   status_code String     @id(map: "ProjectStatus_pkey")

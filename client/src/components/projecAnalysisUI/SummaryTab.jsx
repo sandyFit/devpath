@@ -2,14 +2,8 @@ import React, {useEffect} from 'react';
 import { FileText, Code, CheckCircle, AlertTriangle, Layers } from 'lucide-react';
 import ScoreBar from '../common/ScoreBar';
 
-const SummaryTab = ({ projectData, analyticsSummary, computedStats, getStatusColor }) => {
-    useEffect(() => {
-        console.log('SummaryTab received props:', {
-            projectData,
-            analyticsSummary,
-            computedStats
-        });
-    }, [projectData, analyticsSummary, computedStats]);
+const SummaryTab = () => {
+    
 
     return (
         <div className="space-y-6">

@@ -157,6 +157,9 @@ async function main() {
                 javascript: 95,
                 html: 5
             },
+            total_files: 7,          
+            total_tests: 12,         
+            total_issues: 3,         
             total_lines_of_code: 120,
             total_functions: 5,
             total_classes: 1,
@@ -164,6 +167,7 @@ async function main() {
             updated_at: new Date(),
         }
     });
+
 
 }
 

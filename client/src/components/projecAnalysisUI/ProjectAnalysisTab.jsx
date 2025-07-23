@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import api from '../../services/api';
+import api from '../../utils/api';
 
 const ProjectAnalysis = ({ projectId }) => {
     const [analyses, setAnalyses] = useState([]);
@@ -12,7 +12,7 @@ const ProjectAnalysis = ({ projectId }) => {
         setLoading(true);
         try {
             const response = await api.getAnalysisByProjectId(projectId);
-            console.log('[Full API response]', response); 
+            console.log('[Full API response]', response);
 
             const data = response.analysis;
             console.log('[Fetched]', data);
