@@ -51,8 +51,9 @@ const ProjectSummary = ({ projectId }) => {
                                     {'Project Summary'}
                                 </h2> */}
                                 <p className="text-slate-400">
-                                    A concise breakdown of your project's architecture and analysis results —
-                                    including quality scores, test count, files, and language usage.
+                                    Here's a concise breakdown of your project's architecture and analysis
+                                    results. 
+                                    
                                 </p>
                             </div>
                             <div className={`px-3 py-1 rounded-full text-xs font-medium 
