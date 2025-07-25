@@ -21,7 +21,7 @@ jest.unstable_mockModule('npmlog', () => ({
     }
 }));
 
-const { default: AnalysisService } = await import('../services/analysisService.js');
+const { default: AnalysisService } = await import('../services/llmAnalysis/analysisService.js');
 
 describe('AnalysisService', () => {
     let analysis;
@@ -60,7 +60,7 @@ describe('AnalysisService', () => {
 
         mockFindUnique.mockResolvedValue(expectedResult);
 
-        
+
 
     });
 });

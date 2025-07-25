@@ -1,4 +1,4 @@
-import prisma from '../prisma/prismaClient.js';
+import prisma from '../../prisma/prismaClient.js';
 import { AnalysisType } from '@prisma/client';
 import log from 'npmlog';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +18,7 @@ class AnalysisService {
     }
 
     async createProjectAnalysis(analysisData) {
-        try {           
+        try {
             this.logger.silly(`[ANALYSIS SERVICE] Creating analysis:', ${analysisData}`);
             const analysisId = uuidv4();
             const {
@@ -72,7 +72,7 @@ class AnalysisService {
                 }
             });
             return batchAnalysis;
-            
+
 
         } catch (error) {
             this.logger.error(`[ANALYSIS SERVICE] Failed to create analysis: ${error.message}`);
@@ -148,7 +148,7 @@ class AnalysisService {
         }
 
         const metrics = this.calculateBasicCodeMetrics(fileContent);
-        const issues = []; 
+        const issues = [];
 
         return { metrics, issues };
     }
@@ -248,7 +248,7 @@ class AnalysisService {
             const analysis = await this.prismaClient.analyses.findFirst({
                 where: {
                     project_id: Number(projectId),
-                    analysis_type: AnalysisType.CODE_QUALITY  
+                    analysis_type: AnalysisType.CODE_QUALITY
                 },
                 select: {
                     analysis_id: true,

@@ -1,4 +1,4 @@
-import AnalysisService from "../services/analysisService.js";
+import AnalysisService from "../services/analysis/analysisService.js";
 import log from 'npmlog';
 import { handleError } from "../utils/handleError.js";
 
@@ -10,8 +10,8 @@ class AnalysisController {
 
     async createAnalysis(req, res) {
         try {
-            this.logger.silly('[ANALYSIS CONTROLLER] Creating analysis:', analysisData);
             const { analysisData } = req.body;
+            this.logger.silly('[ANALYSIS CONTROLLER] Creating analysis:', analysisData);
             if (!analysisData || !analysisData.projectId) {
                 return res.status(400).json({ error: 'Missing required analysis data.' });
             }
@@ -25,6 +25,26 @@ class AnalysisController {
             return handleError(res, "creating analysis", error, "ANALYSIS CONTROLLER");
         }
 
+    }
+
+    async analizeFileCode(req, res) {
+        try {
+            const { fileData } = req.body;
+            this.logger.silly(`[ANALYSIS CONTROLLER] Analyzing file:, ${fileData.name}`);
+            if (!fileData || !fileData.name) {
+                return res.status(400).json({
+                    error: 'Missing required analysis data.'
+                });
+            }
+
+            const fileAnalysis = await this.service.analizeFileCode(fileData);
+            this.logger.silly(`[ANALYSIS CONTROLLER] File analysis created: ${fileAnalysis}`);
+            return res.status(201).json(fileAnalysis);
+
+        } catch (error) {
+            this.logger.error(`[ERROR] analizeFileCode failed:, ${error}`);
+            return handleError(res, "creating analysis", error, "ANALYSIS CONTROLLER");
+        }
     }
 
     async getAnalysesByProjectId(req, res) {
