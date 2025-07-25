@@ -3,8 +3,20 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-    await prisma.users.create({
-        data: {
+    // await prisma.users.create({
+    //     data: {
+    //         username: 'devpath_user',
+    //         email: 'user@example.com',
+    //         password_hash: 'hashed_password_123',
+    //         user_status: 'active',
+    //         updated_at: new Date(),
+    //     },
+    // });
+
+    await prisma.users.upsert({
+        where: { username: 'devpath_user' },
+        update: {},
+        create: {
             username: 'devpath_user',
             email: 'user@example.com',
             password_hash: 'hashed_password_123',
@@ -13,23 +25,30 @@ async function main() {
         },
     });
 
-    await prisma.project_statuses.createMany({
-        data: [
-            { status_code: 'draft', description: 'Project created but no files uploaded yet' },
-            { status_code: 'pending', description: 'Files uploaded but not yet analyzed' },
-            { status_code: 'uploading', description: 'Files are being uploaded' },
-            { status_code: 'analyzing', description: 'AI agents are currently analyzing code' },
-            { status_code: 'analyzed', description: 'Analysis completed successfully' },
-            { status_code: 'reviewing', description: 'Results under review' },
-            { status_code: 'learning-path-created', description: 'A personalized learning path has been generated' },
-            { status_code: 'in-progress', description: 'The user is working on the project' },
-            { status_code: 'paused', description: 'The user paused their progress' },
-            { status_code: 'completed', description: 'The project has been completed' },
-            { status_code: 'archived', description: 'Project archived for reference' },
-            { status_code: 'error', description: 'There was an issue during upload or analysis' },
-            { status_code: 'cancelled', description: 'The user cancelled the project' },
-        ],
-    });
+    const statuses = [
+        { status_code: 'draft', description: 'Project created but no files uploaded yet' },
+        { status_code: 'pending', description: 'Files uploaded but not yet analyzed' },
+        { status_code: 'uploading', description: 'Files are being uploaded' },
+        { status_code: 'analyzing', description: 'AI agents are currently analyzing code' },
+        { status_code: 'analyzed', description: 'Analysis completed successfully' },
+        { status_code: 'reviewing', description: 'Results under review' },
+        { status_code: 'learning-path-created', description: 'A personalized learning path has been generated' },
+        { status_code: 'in-progress', description: 'The user is working on the project' },
+        { status_code: 'paused', description: 'The user paused their progress' },
+        { status_code: 'completed', description: 'The project has been completed' },
+        { status_code: 'archived', description: 'Project archived for reference' },
+        { status_code: 'error', description: 'There was an issue during upload or analysis' },
+        { status_code: 'cancelled', description: 'The user cancelled the project' },
+    ];
+
+    for (const status of statuses) {
+        await prisma.project_statuses.upsert({
+            where: { status_code: status.status_code },
+            update: {},
+            create: status,
+        });
+    }
+
 
     await prisma.projects.create({
         data: {
@@ -43,24 +62,78 @@ async function main() {
         },
     });
 
-    await prisma.code_files.create({
-        data: {
+    // 1️⃣ Add multiple code files
+    const files = [
+        {
             project_id: 1,
-            file_name: 'index.js',
-            programming_lang: 'JavaScript',
-            content: 'function greet() {\n  console.log("Hello World");\n}',
-            file_size: 45,
-            file_path: '/files/index.js',
+            file_name: 'index.ts',
+            programming_lang: 'TypeScript',
+            content: 'export const greet = () => console.log("Hello");',
+            file_size: 50,
+            file_path: '/files/index.ts',
             created_at: new Date(),
-            updated_at: new Date(), 
+            updated_at: new Date(),
         },
-    });
+        {
+            project_id: 1,
+            file_name: 'app.tsx',
+            programming_lang: 'TypeScript',
+            content: 'function App() { return <h1>Hello React</h1>; }',
+            file_size: 100,
+            file_path: '/files/app.tsx',
+            created_at: new Date(),
+            updated_at: new Date(),
+        },
+        {
+            project_id: 1,
+            file_name: 'test.spec.ts',
+            programming_lang: 'TypeScript',
+            content: 'test("greet", () => expect(true).toBe(true));',
+            file_size: 40,
+            file_path: '/files/test.spec.ts',
+            created_at: new Date(),
+            updated_at: new Date(),
+        }
+    ];
+
+    for (const file of files) {
+        const existing = await prisma.code_files.findUnique({
+            where: {
+                project_id_file_name: {
+                    project_id: file.project_id,
+                    file_name: file.file_name,
+                },
+            },
+        });
+
+        if (existing) {
+            await prisma.code_files.update({
+                where: {
+                    project_id_file_name: {
+                        project_id: file.project_id,
+                        file_name: file.file_name,
+                    },
+                },
+                data: file,
+            });
+        } else {
+            await prisma.code_files.create({
+                data: file,
+            });
+        }
+    }
+
+
 
     await prisma.analyses.create({
         data: {
             project_id: 1,
             file_id: 1,
             analysis_type: 'CODE_QUALITY',
+            analysis_status: 'completed', // ✅ uses enum
+            analyzer_version: 'llama3-70b-8192',
+            confidence_level: 0.93,
+            error_message: null,
             analysis_result: '✔ Code Analysis Complete\n✔ No critical issues detected\n\n🧠 Tips:\n- Consider using "const" over "var"\n- Add comments for clarity\n',
             issues_found: 'No major issues.\nConsider renaming variables for readability.',
             issues_count: 2,
@@ -78,9 +151,10 @@ async function main() {
             analysis_model: 'llama3-70b-8192',
             processing_time_ms: 1340,
             created_at: new Date(),
-            updated_at: new Date(), 
+            updated_at: new Date(),
         },
     });
+
 
     await prisma.learning_paths.create({
         data: {
@@ -115,37 +189,7 @@ async function main() {
         },
     });
 
-    await prisma.agent_action_types.createMany({
-        data: [
-            { action_type: 'generate_path', description: 'Generate a personalized learning path' },
-            { action_type: 'update_score', description: 'Update analysis or learning scores' },
-            { action_type: 'suggest_topic', description: 'Suggest learning topics based on gaps' },
-            { action_type: 'analyze_project', description: 'Run analysis on a project' },
-            { action_type: 'send_reminder', description: 'Notify user of pending actions' },
-            { action_type: 'log_progress', description: 'Record user progress on learning path' },
-            { action_type: 'adjust_difficulty', description: 'Tune learning path difficulty' },
-            { action_type: 'recommend_resource', description: 'Suggest external learning material' },
-            { action_type: 'evaluate_skills', description: 'Assess skill level based on code or progress' },
-            { action_type: 'summarize_project', description: 'Generate project-level summary' },
-        ],
-    });
 
-    await prisma.agent_actions.create({
-        data: {
-            user_id: 1,
-            project_id: 1,
-            path_id: 1,
-            agent_name: 'path-bot',
-            action_type: 'generate_path',
-            action_details:
-                '🧠 Action:\nSuggested topics: Async/Await, Scope\nEstimated hours: 8\nReason: Skill gap detected in function structure\n',
-            outcome: 'success',
-            confidence_score: 0.92,
-            triggered_by: 'system',
-            created_at: new Date(),
-
-        },
-    });
 
     await prisma.project_statistics.create({
         data: {
@@ -167,6 +211,51 @@ async function main() {
             updated_at: new Date(),
         }
     });
+
+    // 2️⃣ Add project stack items
+    await prisma.project_stack_items.createMany({
+        data: [
+            {
+                project_id: 1,
+                name: 'typescript',
+                type: 'language'
+            },
+            {
+                project_id: 1,
+                name: 'react',
+                type: 'framework'
+            },
+            {
+                project_id: 1,
+                name: 'jest',
+                type: 'tool'
+            }
+        ]
+    });
+
+    await prisma.analysis_events.createMany({
+        data: [
+            {
+                project_id: 1,
+                event_type: 'analysis_started',
+                details: 'Analysis process initiated.',
+                created_at: new Date(Date.now() - 5 * 60 * 1000),
+            },
+            {
+                project_id: 1,
+                event_type: 'project_completed',
+                details: 'Analysis completed successfully.',
+                created_at: new Date(Date.now() - 2 * 60 * 1000),
+            },
+            {
+                project_id: 1,
+                event_type: 'analysis_failed',
+                details: 'Generated suggestions for improvement.',
+                created_at: new Date(),
+            }
+        ]
+    });
+
 
 
 }

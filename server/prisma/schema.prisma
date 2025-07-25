@@ -7,43 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model agent_action_types {
-  action_type   String          @id(map: "AgentActionType_pkey")
-  description   String
-  agent_actions agent_actions[]
-}
-
-model agent_actions {
-  action_id          Int                @id(map: "AgentAction_pkey") @default(autoincrement())
-  user_id            Int
-  project_id         Int
-  path_id            Int
-  action_type        String
-  agent_name         String?
-  action_details     String?
-  outcome            ActionOutcome?
-  confidence_score   Decimal?
-  triggered_by       TriggeredBy?
-  created_at         DateTime           @default(now())
-  agent_action_types agent_action_types @relation(fields: [action_type], references: [action_type], map: "AgentAction_action_type_fkey")
-  learning_paths     learning_paths     @relation(fields: [path_id], references: [path_id], map: "AgentAction_path_id_fkey")
-  projects           projects           @relation(fields: [project_id], references: [project_id], map: "AgentAction_project_id_fkey")
-  users              users              @relation(fields: [user_id], references: [user_id], map: "AgentAction_user_id_fkey")
-}
 
 model analyses {
-  analysis_id              Int        @id(map: "Analysis_pkey") @default(autoincrement())
+  analysis_id              Int           @id @default(autoincrement())
   project_id               Int
   file_id                  Int
   analysis_type            AnalysisType
   analysis_result          String?
   issues_found             String?
-  issues_count             Int?
+  issues_count             Int?          @default(0)
   suggestions              String?
-  quality_score            Int?
-  security_score           Int?
-  complexity_score         Int?
-  best_practices_score     Int?
+  quality_score            Float?        // Changed from Int to Float
+  security_score           Float?        // Changed from Int to Float
+  complexity_score         Float?        // Changed from Int to Float
+  best_practices_score     Float?        // Changed from Int to Float
   learning_gaps            String?
   strengths                String?
   learning_recommendations String?
@@ -51,25 +28,64 @@ model analyses {
   improvement_priority     String?
   recommended_resources    String?
   analysis_model           String?
-  processing_time_ms       Decimal?
-  created_at               DateTime   @default(now())
-  updated_at               DateTime
-  code_files               code_files @relation(fields: [file_id], references: [file_id], map: "Analysis_file_id_fkey")
-  projects                 projects   @relation(fields: [project_id], references: [project_id], map: "Analysis_project_id_fkey")
+  processing_time_ms       Int?          // Changed from Decimal to Int
+  analysis_status          AnalysisStatus? @default(pending)
+  analyzer_version         String?
+  confidence_level         Float?
+  error_message            String?
+  created_at               DateTime      @default(now())
+  updated_at               DateTime      @updatedAt
+  code_files               code_files    @relation(fields: [file_id], references: [file_id], onDelete: Cascade)
+  projects                 projects      @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+  
+  @@index([project_id])
+  @@index([file_id])
+  @@index([analysis_type])
+  @@index([project_id, analysis_type])
+}
+
+enum AnalysisStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+model analysis_events {
+  event_id    Int       @id @default(autoincrement())
+  project_id  Int
+  event_type  EventType 
+  details     String?   
+  created_at  DateTime  @default(now())
+  
+  projects    projects  @relation(fields: [project_id], references: [project_id])
+  
+  @@index([project_id])
+}
+
+enum EventType {
+  analysis_started
+  file_analyzed
+  project_completed
+  analysis_failed
 }
 
 model code_files {
-  file_id          Int        @id(map: "CodeFile_pkey") @default(autoincrement())
+  file_id          Int        @id @default(autoincrement())
   project_id       Int
-  file_name        String     @unique(map: "CodeFile_file_name_key")
+  file_name        String     
   programming_lang String
   content          String?
-  file_size        Decimal?
+  file_size        BigInt?    
   file_path        String?
   created_at       DateTime   @default(now())
-  updated_at       DateTime
+  updated_at       DateTime   @updatedAt
   analyses         analyses[]
-  projects         projects   @relation(fields: [project_id], references: [project_id], map: "CodeFile_project_id_fkey")
+  projects         projects   @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+  
+  @@unique([project_id, file_name])  
+  @@index([project_id])
+  @@index([programming_lang])
 }
 
 model learning_paths {
@@ -86,7 +102,6 @@ model learning_paths {
   resources           String?
   created_at          DateTime        @default(now())
   updated_at          DateTime
-  agent_actions       agent_actions[]
   projects            projects        @relation(fields: [project_id], references: [project_id], map: "LearningPath_project_id_fkey")
   users               users           @relation(fields: [user_id], references: [user_id], map: "LearningPath_user_id_fkey")
   user_progress       user_progress[]
@@ -98,10 +113,11 @@ model project_statistics {
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
 
-  average_quality_score   Float?
+  average_quality_score    Float?
   average_complexity_score Float?
   average_security_score   Float?
-  language_distribution   Json?
+  language_distribution    Json?
+  cyclomatic_complexity    Float?
 
   total_files             Int?     
   total_tests             Int?     
@@ -114,6 +130,20 @@ model project_statistics {
   projects                projects @relation(fields: [project_id], references: [project_id])
 }
 
+model project_stack_items {
+  stack_item_id Int           @id @default(autoincrement())
+  project_id    Int
+  name          String        
+  type          stack_type    
+
+  projects      projects      @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+}
+
+enum stack_type {
+  language
+  framework
+  tool
+}
 
 model project_statuses {
   status_code String     @id(map: "ProjectStatus_pkey")
@@ -130,14 +160,16 @@ model projects {
   created_at         DateTime             @default(now())
   updated_at         DateTime
   uploaded_at        DateTime
-  agent_actions      agent_actions[]
   analyses           analyses[]
   code_files         code_files[]
   learning_paths     learning_paths[]
   project_statistics project_statistics[]
+  stack_items        project_stack_items[]
+  analysis_events    analysis_events[]
   project_statuses   project_statuses     @relation(fields: [status_code], references: [status_code], map: "Project_status_code_fkey")
   users              users                @relation(fields: [user_id], references: [user_id], map: "Project_user_id_fkey")
 }
+
 
 model user_progress {
   progress_id        Int            @id(map: "UserProgress_pkey") @default(autoincrement())
@@ -164,7 +196,6 @@ model users {
   user_status    UserStatus
   created_at     DateTime         @default(now())
   updated_at     DateTime
-  agent_actions  agent_actions[]
   learning_paths learning_paths[]
   projects       projects[]
   user_progress  user_progress[]
@@ -200,18 +231,4 @@ enum AnalysisType {
   PERFORMANCE
 }
 
-
-enum ActionOutcome {
-  success
-  failed
-  ignored
-  pending
-}
-
-enum TriggeredBy {
-  system
-  user
-  schedule
-  api
-}
 
