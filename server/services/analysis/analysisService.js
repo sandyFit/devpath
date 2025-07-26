@@ -1,9 +1,12 @@
-import { runStaticAnalysis } from "./staticAnalysis.js";
 import { FILE_CONFIG } from './constants.js';
 import prisma from '../../prisma/prismaClient.js';
 import { AnalysisType } from '@prisma/client';
 import log from 'npmlog';
-import { v4 as uuidv4 } from 'uuid';
+import * as path from 'path';
+import { readFile, readdir, stat } from 'fs/promises';
+import { runStaticAnalysis } from './staticAnalysis.js';
+//import { detectFrameworksFromPackageJson } from './frameworkDetector.js';
+import { countDirectories, getAllFiles } from "./staticMetrics.js";
 
 class AnalysisService {
     constructor() {
@@ -16,7 +19,7 @@ class AnalysisService {
         try {
             this.logger.silly(`[ANALYSIS SERVICE] Analyzing file: ${fileData.filename}`);
             this.validateAnalysisRequest(fileData);
-            const { metrics } = runStaticAnalysis(fileData.content);
+            const metrics = runStaticAnalysis(fileData.filename, fileData.content);
 
             const result = {
                 ...fileData,
@@ -68,6 +71,64 @@ class AnalysisService {
             );
         }
         
+    }
+
+    async analyzeProject(projectId) {
+        try {
+            this.logger.silly(`[ANALYSIS SERVICE] Analyzing project: ${projectId}`);
+            if (!projectId) {
+                throw new Error('Project ID is required');
+            }
+
+            // 1. Get project from DB
+            const project = await this.prismaClient.projects.findUnique({
+                where: { project_id: projectId }               
+            })
+
+            if (!project) throw new Error(`Project ${projectId} not found`);
+
+            const projectDirPath = path.join(this.FILE_CONFIG.UPLOAD_DIR, `project_${projectId}`);
+            const allFiles = await getAllFiles(projectDirPath);
+            const directoriesCount = await countDirectories(projectDirPath);
+
+            let languageMap = {};
+            let totalLines = 0;
+            let totalFiles = 0;
+
+            for (const filePath of allFiles) {
+                const content = await readFile(filePath, 'utf8');
+                const metrics = runStaticAnalysis(filePath, content);
+
+                totalFiles++;
+                totalLines += metrics.totalLines;
+                languageMap[metrics.language] = (languageMap[metrics.language] || 0) + 1;
+
+                await this.prismaClient.code_files.create({
+                    data: {
+                        project_id: projectId,
+                        file_name: path.basename(filePath),
+                        programming_lang: metrics.language,
+                        content,
+                        file_size: Buffer.byteLength(content),
+                        file_path: filePath,
+                        created_at: new Date(),
+                        updated_at: new Date(),
+                    },
+                });
+            }
+            return {
+                success: true,
+                projectId,
+                totalFiles,
+                totalLines,
+                directoriesCount,
+                languageMap
+            };
+
+        } catch (error) {
+            this.logger.error(`[ANALYSIS SERVICE] analyzeProject failed: ${error.message}`);
+            throw error;
+        }
     }
     
     async getAnalysesByProjectId(projectId, options = {}) {
@@ -143,3 +204,4 @@ class AnalysisService {
     }
 
 }
+export default AnalysisService;

@@ -55,7 +55,6 @@ async function main() {
             user_id: 1,
             status_code: 'draft',
             project_name: 'Mock Project',
-            total_files: 1,
             uploaded_at: new Date(),
             created_at: new Date(),
             updated_at: new Date(), 
@@ -124,36 +123,52 @@ async function main() {
     }
 
 
+    const analysisTypes = [
+        'CODE_QUALITY',
+        'SECURITY',
+        'COMPLEXITY',
+        'BEST_PRACTICES',
+        'PERFORMANCE',
+    ];
 
-    await prisma.analyses.create({
-        data: {
-            project_id: 1,
-            file_id: 1,
-            analysis_type: 'CODE_QUALITY',
-            analysis_status: 'completed', // ✅ uses enum
-            analyzer_version: 'llama3-70b-8192',
-            confidence_level: 0.93,
-            error_message: null,
-            analysis_result: '✔ Code Analysis Complete\n✔ No critical issues detected\n\n🧠 Tips:\n- Consider using "const" over "var"\n- Add comments for clarity\n',
-            issues_found: 'No major issues.\nConsider renaming variables for readability.',
-            issues_count: 2,
-            suggestions: '🛠️ Suggestions:\n1. Rename "greet" to "sayHello"\n2. Add function documentation',
-            quality_score: 85,
-            security_score: 90,
-            complexity_score: 80,
-            best_practices_score: 88,
-            learning_gaps: 'Understanding variable scope\nImproving naming conventions',
-            strengths: 'Consistent indentation\nClear structure',
-            learning_recommendations: 'Focus on function documentation and async patterns',
-            skill_level_assessments: 'intermediate',
-            improvement_priority: 'medium',
-            recommended_resources: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions',
-            analysis_model: 'llama3-70b-8192',
-            processing_time_ms: 1340,
-            created_at: new Date(),
-            updated_at: new Date(),
-        },
-    });
+    const analysisDescriptions = {
+        CODE_QUALITY: 'Checks for code clarity and use of best practices.',
+        SECURITY: 'Scans for vulnerabilities and insecure patterns.',
+        COMPLEXITY: 'Measures cyclomatic complexity and readability.',
+        BEST_PRACTICES: 'Ensures adherence to clean code and style guides.',
+        PERFORMANCE: 'Detects inefficient code and possible bottlenecks.',
+    };
+
+    for (const type of analysisTypes) {
+        await prisma.analyses.create({
+            data: {
+                project_id: 1,
+                file_id: 1, // assumes code file with ID 1 exists
+                analysis_type: type,
+                analysis_status: 'completed',
+                analyzer_version: 'llama3-70b-8192',
+                confidence_level: 0.8 + Math.random() * 0.2,
+                analysis_result: `✔ ${analysisDescriptions[type]}\n\n🧠 Tips: Varies based on analysis.`,
+                issues_found: 'Some improvement areas detected.',
+                issues_count: Math.floor(Math.random() * 4),
+                suggestions: `🛠 Suggestions specific to ${type.toLowerCase()}`,
+                quality_score: 80 + Math.random() * 10,
+                security_score: 80 + Math.random() * 10,
+                complexity_score: 75 + Math.random() * 10,
+                best_practices_score: 78 + Math.random() * 10,
+                learning_gaps: `Gaps found in ${type.toLowerCase()} understanding`,
+                strengths: 'Consistent formatting, modular code',
+                learning_recommendations: `Study ${type.toLowerCase()} techniques`,
+                skill_level_assessments: 'intermediate',
+                improvement_priority: 'medium',
+                recommended_resources: `https://example.com/${type.toLowerCase()}`,
+                analysis_model: 'llama3-70b-8192',
+                processing_time_ms: 1000 + Math.floor(Math.random() * 400),
+                created_at: new Date(),
+                updated_at: new Date(),
+            }
+        });
+    }
 
 
     await prisma.learning_paths.create({
@@ -201,7 +216,8 @@ async function main() {
                 javascript: 95,
                 html: 5
             },
-            total_files: 7,          
+            total_files: 7,  
+            total_dirs: 3,
             total_tests: 12,         
             total_issues: 3,         
             total_lines_of_code: 120,

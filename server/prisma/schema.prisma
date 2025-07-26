@@ -119,7 +119,8 @@ model project_statistics {
   language_distribution    Json?
   cyclomatic_complexity    Float?
 
-  total_files             Int?     
+  total_files             Int? 
+  total_dirs              Int?   
   total_tests             Int?     
   total_issues            Int?     
 
@@ -156,7 +157,6 @@ model projects {
   user_id            Int
   status_code        String
   project_name       String
-  total_files        Int?
   created_at         DateTime             @default(now())
   updated_at         DateTime
   uploaded_at        DateTime
