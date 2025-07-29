@@ -54,11 +54,6 @@ export function runStaticAnalysis(filename, fileContent, options = {}) {
             language,
             ...basicMetrics,
 
-            // Ratios
-            commentsRatio: Math.round(commentsRatio * 100) / 100,
-            codeRatio: Math.round(codeRatio * 100) / 100,
-            blankRatio: Math.round(blankRatio * 100) / 100,
-
             // File metrics
             fileSize,
             avgLineLength: Math.round(avgLineLength * 100) / 100,

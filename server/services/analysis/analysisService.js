@@ -1,4 +1,4 @@
-import { FILE_CONFIG } from './constants.js';
+import { FILE_CONFIG } from '../constants.js';
 import prisma from '../../prisma/prismaClient.js';
 import { AnalysisType } from '@prisma/client';
 import log from 'npmlog';
@@ -7,7 +7,6 @@ import { readFile } from 'fs/promises';
 import { runStaticAnalysis } from './staticAnalysis.js';
 import { countDirectories, countTests, getAllFiles, validatePath } from "./staticMetrics.js";
 import { AnalysisError, FileTooBigError, InvalidFileTypeError } from './analysisErrors.js';
-import rateLimit from 'express-rate-limit'
 
 class AnalysisService {
     constructor() {

@@ -137,9 +137,9 @@ export function getBasicMetrics(content) {
     const codeLines = codeWithoutComments.split('\n').filter(line => line.trim() !== '').length;
 
     // Calculate ratios
-    const commentsRatio = totalLines > 0 ? (commentLines / totalLines) * 100 : 0;
-    const codeRatio = totalLines > 0 ? (codeLines / totalLines) * 100 : 0;
-    const blankRatio = totalLines > 0 ? (blankLines / totalLines) * 100 : 0;
+    const commentsRatio = totalLines > 0 ? Math.round((commentLines / totalLines) * 100) / 100 : 0;
+    const codeRatio = totalLines > 0 ? Math.round((codeLines / totalLines) * 100) / 100 : 0;
+    const blankRatio = totalLines > 0 ? Math.round((blankLines / totalLines) * 100) / 100 : 0;
 
     return {
         totalLines,
