@@ -27,23 +27,43 @@ class AnalysisController {
 
     }
 
-    async analizeFileCode(req, res) {
+    async analyzeFileCode(req, res) {
         try {
             const { fileData } = req.body;
-            this.logger.silly(`[ANALYSIS CONTROLLER] Analyzing file:, ${fileData.name}`);
-            if (!fileData || !fileData.name) {
+            this.logger.silly(`[ANALYSIS CONTROLLER] Analyzing file:, ${fileData.filename}`);
+            if (!fileData || !fileData.filename) {
                 return res.status(400).json({
                     error: 'Missing required analysis data.'
                 });
             }
 
-            const fileAnalysis = await this.service.analizeFileCode(fileData);
+            const fileAnalysis = await this.service.analyzeFileCode(fileData);
             this.logger.silly(`[ANALYSIS CONTROLLER] File analysis created: ${fileAnalysis}`);
             return res.status(201).json(fileAnalysis);
 
         } catch (error) {
             this.logger.error(`[ERROR] analizeFileCode failed:, ${error}`);
-            return handleError(res, "creating analysis", error, "ANALYSIS CONTROLLER");
+            return handleError(res, "analyzing file", error, "ANALYSIS CONTROLLER");
+        }
+    }
+
+
+    async analyzeProject(req, res) {
+        try {
+            const projectId = req.params.projectId;
+            if (!projectId) {
+                return res.status(400).json({ error: 'Missing required project ID.' });
+            }
+
+            this.logger.silly(`[ANALYSIS CONTROLLER] Getting analyses for project ${projectId}`);
+            const analysis = await this.service.analyzeProject(projectId);
+
+            this.logger.info("[ANALYSIS CONTROLLER] Analysis retrieved:", analysis);
+            return res.status(200).json(analysis);            
+
+        } catch (error) {
+            this.logger.error("[ERROR] analyzeProject failed:", error);
+            return handleError(res, "Analyzing project", error, "ANALYSIS CONTROLLER");
         }
     }
 
