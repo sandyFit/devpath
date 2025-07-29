@@ -7,6 +7,7 @@ import { readFile } from 'fs/promises';
 import { runStaticAnalysis } from './staticAnalysis.js';
 import { countDirectories, countTests, getAllFiles, validatePath } from "./staticMetrics.js";
 import { AnalysisError, FileTooBigError, InvalidFileTypeError } from './analysisErrors.js';
+import rateLimit from 'express-rate-limit'
 
 class AnalysisService {
     constructor() {
@@ -37,9 +38,16 @@ class AnalysisService {
     validateAnalysisRequest(fileData) {
         const { filename, content, analysisType } = fileData;
 
-        if (!filename || content === undefined || !analysisType) {
-            throw new AnalysisError('Invalid file data - missing required fields', 'INVALID_DATA');
+        // Check for null/undefined explicitly
+        if (!filename?.trim()) {
+            throw new AnalysisError('Filename is required and cannot be empty', 'MISSING_FILENAME');
         }
+
+        // Better content validation
+        if (content === null || content === undefined) {
+            throw new AnalysisError('File content is required', 'MISSING_CONTENT');
+        }
+
 
         if (typeof content !== 'string') {
             throw new AnalysisError('File content must be a string', 'INVALID_CONTENT_TYPE');
@@ -47,13 +55,14 @@ class AnalysisService {
 
         // Allow empty files but log a warning
         if (content.trim() === '') {
-            this.logger.warn(`[ANALYSIS SERVICE] Warning: File ${filename} is empty or contains only whitespace`);
+            this.logger.warn(`[ANALYSIS SERVICE] Warning: File 
+                ${filename} is empty or contains only whitespace`);
         }
 
         // Check file extension
-        const ext = path.extname(filename).toLowerCase();
-        if (!this.FILE_CONFIG.SUPPORTED_EXTENSIONS.includes(ext)) {
-            throw new InvalidFileTypeError(filename, ext, this.FILE_CONFIG.SUPPORTED_EXTENSIONS);
+        const fileExtension = path.extname(filename).toLowerCase();
+        if (!this.FILE_CONFIG.SUPPORTED_EXTENSIONS.includes(fileExtension)) {
+            throw new InvalidFileTypeError(filename, fileExtension, this.FILE_CONFIG.SUPPORTED_EXTENSIONS);
         }
 
         // Check file size
@@ -76,6 +85,14 @@ class AnalysisService {
             );
         }
     }
+
+    /**
+ * Processes files in batches, analyzes each, and stores them in DB.
+ * @param {string[]} files - Array of file paths to process.
+ * @param {string} projectId - Project ID to associate files with.
+ * @param {Function} [onFileProcessed] - Callback invoked after each file.
+ * @param {Function} [onProgress] - Callback to track overall progress.
+ */
 
     async analyzeProject(projectId, onProgress = null) {
         try {
@@ -136,46 +153,52 @@ class AnalysisService {
         for (let i = 0; i < files.length; i += batchSize) {
             const batch = files.slice(i, i + batchSize);
 
-            await Promise.all(batch.map(async (filePath, batchIndex) => {
-                try {
-                    const content = await readFile(filePath, 'utf8');
-                    const metrics = runStaticAnalysis(filePath, content);
+            await this.prismaClient.$transaction(async (tx) => {               
+                await Promise.all(batch.map((filePath, batchIndex) =>
+                    this._processFile(
+                        tx,
+                        filePath,
+                        projectId,
+                        onFileProcessed,
+                        onProgress,
+                        i + batchIndex + 1,
+                        files.length
+                    )
+                ));
 
-                    // Save to database
-                    await this.prismaClient.code_files.create({
-                        data: {
-                            project_id: projectId,
-                            file_name: path.basename(filePath),
-                            programming_lang: metrics.language,
-                            content,
-                            file_size: Buffer.byteLength(content),
-                            file_path: filePath,
-                            created_at: new Date(),
-                            updated_at: new Date(),
-                        },
-                    });
+            })
+        }
+    }
 
-                    // Call progress callback
-                    if (onFileProcessed) {
-                        onFileProcessed({ metrics });
-                    }
+    async _processFile(tx, filePath, projectId, onFileProcessed, onProgress, currentIndex, totalFiles) {
+        try {
+            const content = await readFile(filePath, 'utf-8');
+            const metrics = runStaticAnalysis(filePath, content);
+            await tx.code_files.create({
+                data: {
+                    project_id: projectId,
+                    file_name: path.basename(filePath),
+                    programming_lang: metrics.language,
+                    content,
+                    file_size: Buffer.byteLength(content),
+                    file_path: filePath,
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                },
+            });
+            if (onFileProcessed) onFileProcessed({ metrics });
 
-                    // Call progress tracking
-                    if (onProgress) {
-                        const currentFile = i + batchIndex + 1;
-                        onProgress({
-                            current: currentFile,
-                            total: files.length,
-                            percentage: Math.round((currentFile / files.length) * 100),
-                            currentFile: path.basename(filePath)
-                        });
-                    }
-
-                } catch (error) {
-                    this.logger.error(`[ANALYSIS SERVICE] Failed to process file ${filePath}: ${error.message}`);
-                    // Continue processing other files
-                }
-            }));
+            if (onProgress) {
+                onProgress({
+                    current: currentIndex,
+                    total: totalFiles,
+                    percentage: Math.round((currentIndex / totalFiles) * 100),
+                    currentFile: path.basename(filePath),
+                })
+            }
+        } catch (error) {
+            this.logger.error(`[ANALYSIS SERVICE] 
+                Failed to process file ${filePath}: ${error.message}`)
         }
     }
 
