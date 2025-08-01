@@ -1,5 +1,3 @@
-// validateRequests.js
-
 import { AnalysisError, FileTooBigError, InvalidFileTypeError } from './analysisErrors.js';
 import { AnalysisType } from '@prisma/client';
 import * as path from 'path';

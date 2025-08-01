@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import prisma from './prisma/prismaClient.js';
 import ProjectRoutes from "./routes/projectRoutes.js";
 import AnalysisRoutes from "./routes/analysisRoutes.js";
+import UploadRoutes from './routes/uploadRoutes.js';
 
 const app = express();
 dotenv.config();
@@ -12,8 +13,10 @@ app.use(cors());
 
 const projectRoutes = new ProjectRoutes();
 const analysisRoutes = new AnalysisRoutes();
+const uploadRoutes = new UploadRoutes();
 app.use("/api/v1/projects", projectRoutes.getRouter());
 app.use("/api/v1/analyses", analysisRoutes.getRouter());
+app.use('/api/v1/upload', uploadRoutes.getRouter());
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 5000; 

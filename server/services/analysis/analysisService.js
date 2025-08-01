@@ -41,12 +41,10 @@ class AnalysisService {
     validateAnalysisRequest(fileData) {
         const { filename, content, analysisType } = fileData;
 
-        const { SUPPORTED_EXTENSIONS, MAX_FILE_SIZE } = this.FILE_CONFIG;
-
         validateFilename(filename);
         validateContent(content, filename, this.logger);
-        validateFileExtension(filename, SUPPORTED_EXTENSIONS);
-        validateFileSize(filename, content, MAX_FILE_SIZE);
+        validateFileExtension(filename, this.FILE_CONFIG.SUPPORTED_EXTENSIONS);
+        validateFileSize(filename, content, this.FILE_CONFIG.MAX_FILE_SIZE);
         validateAnalysisType(analysisType);
     }
 

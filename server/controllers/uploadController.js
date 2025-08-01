@@ -40,7 +40,7 @@ class UploadController {
                 });
             };
 
-            const fileContent = await this.service.getExtractedFileContent(req.body);
+            const fileContent = await this.service.getExtractedFileContent(filename, projectId);
             this.logger.info("[UPLOAD CONTROLLER] — File content fetched successfully");
             return res.status(200).json(fileContent);
 
@@ -60,7 +60,7 @@ class UploadController {
 
             this.logger.silly("[DEBUG] projectId from params:", projectId);
 
-            const extractedFilesList = await this.service.getExtractedFileContent(projectId);
+            const extractedFilesList = await this.service.listExtractedFiles(projectId);
             this.logger.info("[UPLOAD CONTROLLER] — Files list fetched successfully");
             return res.status(200).json(extractedFilesList);
 
