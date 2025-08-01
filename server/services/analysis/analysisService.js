@@ -6,7 +6,11 @@ import * as path from 'path';
 import { readFile } from 'fs/promises';
 import { runStaticAnalysis } from './staticAnalysis.js';
 import { countDirectories, countTests, getAllFiles, validatePath } from "./staticMetrics.js";
-import { AnalysisError, FileTooBigError, InvalidFileTypeError } from './analysisErrors.js';
+import { AnalysisError } from './analysisErrors.js';
+import {
+    validateFilename, validateContent, validateFileExtension,
+    validateFileSize, validateAnalysisType
+} from './validateRequests.js'
 
 class AnalysisService {
     constructor() {
@@ -37,53 +41,15 @@ class AnalysisService {
     validateAnalysisRequest(fileData) {
         const { filename, content, analysisType } = fileData;
 
-        // Check for null/undefined explicitly
-        if (!filename?.trim()) {
-            throw new AnalysisError('Filename is required and cannot be empty', 'MISSING_FILENAME');
-        }
+        const { SUPPORTED_EXTENSIONS, MAX_FILE_SIZE } = this.FILE_CONFIG;
 
-        // Better content validation
-        if (content === null || content === undefined) {
-            throw new AnalysisError('File content is required', 'MISSING_CONTENT');
-        }
-
-
-        if (typeof content !== 'string') {
-            throw new AnalysisError('File content must be a string', 'INVALID_CONTENT_TYPE');
-        }
-
-        // Allow empty files but log a warning
-        if (content.trim() === '') {
-            this.logger.warn(`[ANALYSIS SERVICE] Warning: File 
-                ${filename} is empty or contains only whitespace`);
-        }
-
-        // Check file extension
-        const fileExtension = path.extname(filename).toLowerCase();
-        if (!this.FILE_CONFIG.SUPPORTED_EXTENSIONS.includes(fileExtension)) {
-            throw new InvalidFileTypeError(filename, fileExtension, this.FILE_CONFIG.SUPPORTED_EXTENSIONS);
-        }
-
-        // Check file size
-        const fileSize = Buffer.byteLength(content, 'utf-8');
-        if (fileSize > this.FILE_CONFIG.MAX_FILE_SIZE) {
-            throw new FileTooBigError(filename, fileSize, this.FILE_CONFIG.MAX_FILE_SIZE);
-        }
-
-        // Validate analysis types
-        const validEnumValues = Object.values(AnalysisType);
-        if (!Array.isArray(analysisType) || analysisType.length === 0) {
-            throw new AnalysisError('At least one analysis type is required', 'MISSING_ANALYSIS_TYPE');
-        }
-
-        const invalidTypes = analysisType.filter(type => !validEnumValues.includes(type));
-        if (invalidTypes.length > 0) {
-            throw new AnalysisError(
-                `Invalid analysis types: ${invalidTypes.join(', ')}. Supported types: ${validEnumValues.join(', ')}`,
-                'INVALID_ANALYSIS_TYPE'
-            );
-        }
+        validateFilename(filename);
+        validateContent(content, filename, this.logger);
+        validateFileExtension(filename, SUPPORTED_EXTENSIONS);
+        validateFileSize(filename, content, MAX_FILE_SIZE);
+        validateAnalysisType(analysisType);
     }
+
 
     /**
  * Processes files in batches, analyzes each, and stores them in DB.
